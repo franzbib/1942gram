@@ -1,4 +1,4 @@
-import { SCORING, SUCCESS_THRESHOLDS } from "./constants";
+import { BASE_INITIAL_HEALTH, SCORING, SUCCESS_THRESHOLDS } from "./constants";
 import type { GameConfig, GameResult, SessionStats } from "./types";
 
 export const initialStats = (): SessionStats => ({
@@ -11,9 +11,12 @@ export const initialStats = (): SessionStats => ({
   meliorativesProtected: 0,
   meliorativesDestroyed: 0,
   pejorativesMissed: 0,
+  pejorativesHitBase: 0,
   neutralShot: 0,
   bonusAbsorbed: 0,
   ambivalentResolved: 0,
+  baseHealth: BASE_INITIAL_HEALTH,
+  weaponLocks: 0,
   comboMax: 0,
   wordsProcessed: 0,
   review: [],
@@ -45,6 +48,7 @@ export function buildResult(stats: SessionStats, config: GameConfig): GameResult
   const success =
     pct >= SUCCESS_THRESHOLDS.minScorePercent &&
     stats.bossCompleted &&
+    stats.baseHealth > 0 &&
     stats.meliorativesDestroyed <= SUCCESS_THRESHOLDS.maxMeliorativesDestroyed &&
     prec >= SUCCESS_THRESHOLDS.minPrecision;
   return {

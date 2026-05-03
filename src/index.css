@@ -91,6 +91,24 @@ option { color: #102135; }
 .hud span { display: block; color: #a9c7df; font-size: .78rem; }
 .hud strong { font-size: 1.15rem; }
 .active-bonus { border: 1px solid rgba(94,234,212,.45); }
+.base-meter i {
+  display: block;
+  height: 7px;
+  margin-top: .4rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.15);
+  overflow: hidden;
+}
+.base-meter b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #8fd7c1;
+}
+.base-meter.warning b { background: #f4c26d; }
+.base-meter.critical b { background: #ff9aa7; }
+.weapon-lock { border: 1px solid rgba(255, 154, 167, .55); }
+.weapon-lock strong { color: #ffd1d8; }
 .message-strip {
   position: absolute;
   left: 50%;

@@ -91,9 +91,13 @@ export type SessionStats = {
   meliorativesProtected: number;
   meliorativesDestroyed: number;
   pejorativesMissed: number;
+  pejorativesHitBase: number;
   neutralShot: number;
   bonusAbsorbed: number;
   ambivalentResolved: number;
+  baseHealth: number;
+  weaponLocks: number;
+  failureReason?: "baseDestroyed" | "tooManyMistakes";
   comboMax: number;
   wordsProcessed: number;
   review: ReviewEntry[];

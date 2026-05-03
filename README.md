@@ -60,6 +60,13 @@ Les couleurs catégorielles sont réservées :
 
 Les verbes-bonus restent visuellement distincts sous forme de capsules, car leur rôle n'est pas de signaler une connotation. Les mots ambivalents peuvent porter un `?`, qui indique seulement qu'un contexte est nécessaire.
 
+## Nouvelles mécaniques de sanction
+
+- Les mots péjoratifs laissés passer endommagent la base discursive en bas de l'écran.
+- Si la base tombe à 0 %, la partie se termine par un échec : trop de jugements négatifs non repérés ont atteint le terrain discursif.
+- Détruire un mot mélioratif bloque temporairement le tir. Le joueur peut toujours se déplacer, mais il doit attendre avant de neutraliser à nouveau.
+- Les cartouches des mots ont été réduits pour améliorer la fluidité, la précision du tir et la lisibilité de la zone de jeu.
+
 ## Structure
 
 - `src/components` : écrans et UI.

@@ -8,6 +8,15 @@
 - [ ] Le joueur peut tirer pour neutraliser.
 - [ ] Le joueur peut protéger ou absorber avec E / Entrée / bouton Protéger.
 - [ ] Les mots descendent.
+- [ ] La base est visible en bas de la zone de jeu.
+- [ ] Laisser passer plusieurs péjoratifs réduit la santé de la base.
+- [ ] La partie se termine si la base atteint 0.
+- [ ] Détruire un mélioratif bloque temporairement le tir.
+- [ ] Le déplacement reste possible pendant le blocage du tir.
+- [ ] Le tir automatique est suspendu pendant le blocage.
+- [ ] Les mélioratifs et les neutres qui sortent n'endommagent pas la base.
+- [ ] Les mots sont plus petits mais restent lisibles.
+- [ ] Les collisions correspondent aux nouveaux cartouches.
 - [ ] En B1 arcade, un péjoratif, un mélioratif et un neutre ont une apparence équivalente avant action.
 - [ ] En B2 arcade, les mots ordinaires ne donnent pas la réponse par couleur, bordure ou icône.
 - [ ] La couleur de feedback apparaît seulement après tir, protection, absorption ou clic de boss.

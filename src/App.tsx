@@ -32,7 +32,7 @@ export default function App() {
 
   if (screen === "help") return <HelpModal onBack={() => setScreen("menu")} />;
   if (screen === "lexicon") return <LexiconReview onBack={() => setScreen(result ? "end" : "menu")} />;
-  if (screen === "game") return <GameScreen config={config} onBoss={goBoss} onMenu={() => setScreen("menu")} />;
+  if (screen === "game") return <GameScreen config={config} onBoss={goBoss} onMenu={() => setScreen("menu")} onGameOver={complete} />;
   if (screen === "boss") return <BossTextPhase config={config} baseStats={baseStats} onComplete={complete} />;
   if (screen === "end" && result) {
     return (

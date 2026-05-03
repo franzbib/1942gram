@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getLexicon } from "../data/lexicalItems";
-import { GAME_SIZE, SCORING } from "../engine/constants";
+import { BASE_DAMAGE_BY_LEVEL, GAME_SIZE, MAX_WEAPON_LOCK_MS, SCORING, WEAPON_LOCK_BY_LEVEL, WORD_VISUAL_SCALE } from "../engine/constants";
 import { getDifficulty } from "../engine/difficulty";
-import { initialStats } from "../engine/scoring";
-import type { GameConfig, LexicalItem, SessionStats } from "../engine/types";
+import { buildResult, initialStats } from "../engine/scoring";
+import type { GameConfig, GameResult, LexicalItem, SessionStats } from "../engine/types";
 import { useKeyboardControls } from "../hooks/useKeyboardControls";
 import { useTouchControls } from "../hooks/useTouchControls";
 import { choice, uid } from "../utils/random";
@@ -23,6 +23,7 @@ type FallingWord = {
 
 type Shot = { id: string; x: number; y: number; w: number; h: number };
 type Pulse = { id: string; x: number; y: number; born: number; ok: boolean };
+type BaseImpact = { id: string; x: number; born: number };
 type FeedbackTone = "neutral" | "success" | "error";
 
 const semanticColors = {
@@ -53,10 +54,12 @@ export default function GameCanvas({
   config,
   onBoss,
   onMenu,
+  onGameOver,
 }: {
   config: GameConfig;
   onBoss: (stats: SessionStats) => void;
   onMenu: () => void;
+  onGameOver: (result: GameResult) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const statsRef = useRef(initialStats());
@@ -66,12 +69,14 @@ export default function GameCanvas({
   const [messageTone, setMessageTone] = useState<FeedbackTone>("neutral");
   const [comboView, setComboView] = useState(1);
   const [activeBonus, setActiveBonus] = useState<string | undefined>();
+  const [fireLockedMs, setFireLockedMs] = useState(0);
   const pausedRef = useRef(false);
   const keys = useKeyboardControls(() => setPaused((p) => !p));
   const touch = useTouchControls();
   const words = useRef<FallingWord[]>([]);
   const shots = useRef<Shot[]>([]);
   const pulses = useRef<Pulse[]>([]);
+  const baseImpacts = useRef<BaseImpact[]>([]);
   const player = useRef<{ x: number; y: number }>({ x: GAME_SIZE.width / 2, y: GAME_SIZE.playerY });
   const combo = useRef(1);
   const lastFire = useRef(0);
@@ -80,6 +85,7 @@ export default function GameCanvas({
   const startedAt = useRef(0);
   const bonusUntil = useRef(0);
   const bonusEffect = useRef<string | null>(null);
+  const weaponDisabledUntil = useRef(0);
   const difficulty = getDifficulty(config.level, config.mode);
   const lexicon = getLexicon(config.level, config.theme);
 
@@ -100,6 +106,17 @@ export default function GameCanvas({
     setMessageTone(tone);
   };
 
+  const wordSizePreset = () => {
+    const scale = config.options.readable ? WORD_VISUAL_SCALE.readable : WORD_VISUAL_SCALE.normal;
+    const baseFont = config.options.readable ? 21 : 18;
+    return {
+      fontSize: Math.max(config.options.readable ? 17 : 15, baseFont * difficulty.readableScale * scale),
+      xPad: config.options.readable ? 18 : 14,
+      yPad: config.options.readable ? 11 : 8,
+      minWidth: config.options.readable ? 74 : 58,
+    };
+  };
+
   const spawnWord = (now: number) => {
     if (words.current.length >= GAME_SIZE.maxObjects) return;
     const pool = lexicon.filter((item) => {
@@ -108,8 +125,9 @@ export default function GameCanvas({
       return true;
     });
     const item = choice(pool);
-    const fontSize = (config.options.readable ? 23 : 19) * difficulty.readableScale;
-    const width = Math.max(86, item.text.length * fontSize * 0.62 + 28);
+    const size = wordSizePreset();
+    const fontSize = item.text.length > 16 ? size.fontSize - 1.5 : size.fontSize;
+    const width = Math.max(size.minWidth, item.text.length * fontSize * 0.56 + size.xPad * 2);
     const context = item.category === "ambivalent" ? choice(item.contextExamples ?? []) : undefined;
     words.current.push({
       id: uid("word"),
@@ -118,13 +136,14 @@ export default function GameCanvas({
       y: -40,
       speed: (0.55 + Math.random() * 0.55) * difficulty.speed,
       w: width,
-      h: fontSize + 22,
+      h: fontSize + size.yPad * 2,
       contextValue: context?.value,
     });
     lastSpawn.current = now;
   };
 
   const fire = (now: number) => {
+    if (now < weaponDisabledUntil.current) return;
     const interval = bonusEffect.current === "wideShot" ? 160 : 230;
     if (now - lastFire.current < interval) return;
     const wide = bonusEffect.current === "wideShot" && now < bonusUntil.current;
@@ -135,6 +154,14 @@ export default function GameCanvas({
     }
     statsRef.current.shots += 1;
     lastFire.current = now;
+  };
+
+  const lockWeapon = (now: number) => {
+    const modeFactor = config.mode === "training" ? 0.75 : 1;
+    const duration = WEAPON_LOCK_BY_LEVEL[config.level] * modeFactor;
+    weaponDisabledUntil.current = Math.min(Math.max(weaponDisabledUntil.current, now) + duration, now + MAX_WEAPON_LOCK_MS);
+    statsRef.current.weaponLocks += 1;
+    setFireLockedMs(Math.max(0, weaponDisabledUntil.current - now));
   };
 
   const isPejorativeInContext = (word: FallingWord) => word.item.category === "pejorative" || (word.item.category === "ambivalent" && word.contextValue === "pejorative");
@@ -157,7 +184,8 @@ export default function GameCanvas({
       stats.meliorativesDestroyed += 1;
       stats.review.unshift({ item: word.item, reason: `Vous avez tiré sur « ${word.item.text} ». Ce mot valorise généralement l'idée.` });
       combo.current = 1;
-      feedback("Attention à la connotation : ce mot était mélioratif.", "error");
+      lockWeapon(performance.now());
+      feedback("Mot mélioratif détruit : tir désactivé.", "error");
     } else if (cat === "bonus") {
       addScore(SCORING.shootBonus, false);
       stats.review.unshift({ item: word.item, reason: `« ${word.item.text} » était un verbe-bonus à absorber.` });
@@ -226,6 +254,15 @@ export default function GameCanvas({
     });
   };
 
+  const damageBase = (word: FallingWord) => {
+    const stats = statsRef.current;
+    const damage = BASE_DAMAGE_BY_LEVEL[config.level];
+    stats.baseHealth = Math.max(0, stats.baseHealth - damage);
+    stats.pejorativesHitBase += 1;
+    stats.failureReason = stats.baseHealth <= 0 ? "baseDestroyed" : stats.failureReason;
+    baseImpacts.current.push({ id: uid("base"), x: word.x + word.w / 2, born: performance.now() });
+  };
+
   const processMiss = (word: FallingWord) => {
     const stats = statsRef.current;
     stats.wordsProcessed += 1;
@@ -233,9 +270,10 @@ export default function GameCanvas({
     if (cat === "pejorative" || (cat === "ambivalent" && word.contextValue === "pejorative")) {
       addScore(cat === "ambivalent" ? SCORING.wrongAmbivalent : SCORING.missPejorative, false);
       stats.pejorativesMissed += 1;
+      damageBase(word);
       stats.review.unshift({ item: word.item, reason: `« ${word.item.text} » a traversé l'écran alors qu'il portait une valeur négative.` });
       combo.current = 1;
-      feedback("Un mot péjoratif est passé : la critique n'a pas été neutralisée.", "error");
+      feedback("Péjoratif laissé passer : la base perd en clarté.", "error");
     } else if (cat === "meliorative" || (cat === "ambivalent" && word.contextValue === "meliorative")) {
       addScore(cat === "ambivalent" ? SCORING.correctAmbivalent : SCORING.protectMeliorative, true);
       stats.meliorativesProtected += 1;
@@ -287,6 +325,7 @@ export default function GameCanvas({
       ctx.lineTo(x, GAME_SIZE.height);
       ctx.stroke();
     }
+    const baseHealth = statsRef.current.baseHealth;
     ctx.fillStyle = "rgba(74, 132, 164, .36)";
     ctx.beginPath();
     ctx.moveTo(0, 610);
@@ -297,6 +336,28 @@ export default function GameCanvas({
     ctx.fill();
     ctx.fillStyle = "#102033";
     for (let i = 0; i < 18; i++) ctx.fillRect(i * 58, 560 - (i % 5) * 18, 42, 70 + (i % 4) * 16);
+    ctx.fillStyle = baseHealth < 15 ? "rgba(116, 41, 51, .78)" : baseHealth < 40 ? "rgba(102, 74, 55, .78)" : "rgba(19, 45, 61, .82)";
+    ctx.fillRect(0, GAME_SIZE.baseY, GAME_SIZE.width, 20);
+    ctx.fillStyle = "rgba(232, 241, 247, .78)";
+    ctx.font = "12px Inter, system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("Base discursive", 18, GAME_SIZE.baseY + 14);
+    ctx.fillStyle = "rgba(255,255,255,.18)";
+    ctx.fillRect(132, GAME_SIZE.baseY + 6, 118, 8);
+    ctx.fillStyle = baseHealth < 15 ? "#ff9aa7" : baseHealth < 40 ? "#f4c26d" : "#8fd7c1";
+    ctx.fillRect(132, GAME_SIZE.baseY + 6, 118 * Math.max(0, baseHealth / 100), 8);
+    if (baseHealth < 70) {
+      ctx.strokeStyle = "rgba(246, 220, 190, .35)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < (baseHealth < 40 ? 9 : 4); i++) {
+        const x = 300 + i * 67;
+        ctx.beginPath();
+        ctx.moveTo(x, GAME_SIZE.baseY + 2);
+        ctx.lineTo(x + 12, GAME_SIZE.baseY + 16);
+        ctx.lineTo(x + 5, GAME_SIZE.baseY + 20);
+        ctx.stroke();
+      }
+    }
     ctx.fillStyle = "#182a3e";
     ctx.beginPath();
     ctx.moveTo(454, 560);
@@ -310,6 +371,8 @@ export default function GameCanvas({
     ctx.fillStyle = "#f9d985";
     for (let i = 0; i < 16; i++) ctx.fillRect(i * 59 + 18, 585 - (i % 4) * 16, 6, 5);
 
+    const weaponLocked = now < weaponDisabledUntil.current;
+    ctx.globalAlpha = weaponLocked && Math.floor(now / 120) % 2 === 0 ? 0.55 : 1;
     ctx.fillStyle = "#e8f1ff";
     ctx.beginPath();
     ctx.moveTo(player.current.x, player.current.y - 24);
@@ -321,6 +384,14 @@ export default function GameCanvas({
     ctx.strokeStyle = "#6dd3ff";
     ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.globalAlpha = 1;
+    if (weaponLocked) {
+      ctx.strokeStyle = "rgba(255, 154, 167, .82)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(player.current.x, player.current.y - 2, 34, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     shots.current.forEach((shot) => {
       ctx.fillStyle = "#d9fbff";
@@ -343,6 +414,18 @@ export default function GameCanvas({
       ctx.beginPath();
       ctx.arc(pulse.x, pulse.y, 18 + age * 72, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+    });
+
+    baseImpacts.current.forEach((impact) => {
+      const age = (now - impact.born) / 700;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - age);
+      ctx.strokeStyle = "rgba(255, 154, 167, .82)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(impact.x, GAME_SIZE.baseY + 8, 10 + age * 34, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.restore();
     });
 
@@ -376,14 +459,15 @@ export default function GameCanvas({
         else ctx.arc(word.x + 18, word.y + word.h / 2, 9, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = "#f8fafc";
-        ctx.font = "bold 12px Inter, system-ui, sans-serif";
+        ctx.font = "bold 11px Inter, system-ui, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const glyph = isBonus ? "V" : isAmbivalent && !fullHints ? "?" : item.category === "pejorative" ? "!" : item.category === "meliorative" ? "+" : "=";
         ctx.fillText(glyph, word.x + 18, word.y + word.h / 2 + 1);
       }
       ctx.fillStyle = fullHints ? "#f8fafc" : "#142033";
-      ctx.font = `${config.options.readable ? 24 : 20}px Inter, system-ui, sans-serif`;
+      const renderedFont = Math.max(config.options.readable ? 17 : 15, word.h - (config.options.readable ? 22 : 16));
+      ctx.font = `${renderedFont}px Inter, system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(item.text, word.x + word.w / 2 + (isBonus || isAmbivalent || fullHints ? 10 : 0), word.y + word.h / 2 + 1);
@@ -418,6 +502,9 @@ export default function GameCanvas({
     words.current = [];
     shots.current = [];
     pulses.current = [];
+    baseImpacts.current = [];
+    weaponDisabledUntil.current = 0;
+    setFireLockedMs(0);
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -445,6 +532,7 @@ export default function GameCanvas({
         if (now - lastSpawn.current > difficulty.spawnMs) spawnWord(now);
         shots.current.forEach((s) => (s.y -= 8.5));
         pulses.current = pulses.current.filter((pulse) => now - pulse.born < 520);
+        baseImpacts.current = baseImpacts.current.filter((impact) => now - impact.born < 700);
         words.current.forEach((w) => {
           const frozen = bonusEffect.current === "freezePejoratives" && w.item.category === "pejorative" && now < bonusUntil.current;
           const slow = bonusEffect.current === "slowMotion" && now < bonusUntil.current;
@@ -466,6 +554,10 @@ export default function GameCanvas({
             absorbBonus(word);
             return false;
           }
+          if (isPejorativeInContext(word) && word.y + word.h >= GAME_SIZE.baseY) {
+            processMiss(word);
+            return false;
+          }
           if (word.y > GAME_SIZE.height + 20) {
             processMiss(word);
             return false;
@@ -473,11 +565,22 @@ export default function GameCanvas({
           return true;
         });
         setComboView(combo.current);
+        setFireLockedMs(Math.max(0, weaponDisabledUntil.current - now));
         if (now > bonusUntil.current) {
           bonusEffect.current = null;
           setActiveBonus(undefined);
         }
-        if ((now - startedAt.current) / 1000 > (config.mode === "training" ? 105 : 90) || statsRef.current.wordsProcessed >= GAME_SIZE.bossAfterProcessed || statsRef.current.mistakes >= 6) {
+        if (statsRef.current.baseHealth <= 0) {
+          statsRef.current.failureReason = "baseDestroyed";
+          onGameOver(buildResult(statsRef.current, config));
+          return;
+        }
+        if (statsRef.current.mistakes >= 6) {
+          statsRef.current.failureReason = "tooManyMistakes";
+          onGameOver(buildResult(statsRef.current, config));
+          return;
+        }
+        if ((now - startedAt.current) / 1000 > (config.mode === "training" ? 105 : 90) || statsRef.current.wordsProcessed >= GAME_SIZE.bossAfterProcessed) {
           onBoss(statsRef.current);
           return;
         }
@@ -509,11 +612,11 @@ export default function GameCanvas({
       canvas.removeEventListener("touchmove", onTouch);
       canvas.removeEventListener("touchend", clearTouch);
     };
-  }, [config, difficulty.spawnMs, draw, keys, onBoss, touch]);
+  }, [config, difficulty.spawnMs, draw, keys, onBoss, onGameOver, touch]);
 
   return (
     <div className="game-layout" data-gameplay>
-      <Hud stats={statsView} combo={comboView} activeBonus={activeBonus} />
+      <Hud stats={statsView} combo={comboView} activeBonus={activeBonus} fireLockedMs={fireLockedMs} />
       <div className="stage-wrap">
         <canvas ref={canvasRef} className="game-canvas" aria-label="Zone de jeu Mission Nuance" />
         <div className="action-legend">
