@@ -19,10 +19,10 @@ Sous PowerShell, si `npm` est bloqué par la politique d'exécution, utiliser `n
 
 ## Règles
 
-- Détruire les mots péjoratifs.
-- Protéger les mots mélioratifs.
+- Neutraliser les mots péjoratifs avec le tir.
+- Protéger les mots mélioratifs avec l'action de protection.
 - Ignorer les mots neutres.
-- Absorber les verbes-bonus.
+- Absorber les verbes-bonus avec l'action de protection.
 - Lire le contexte des mots ambivalents.
 - Terminer le boss textuel en repérant puis reformulant les jugements trop marqués.
 
@@ -31,6 +31,21 @@ Sous PowerShell, si `npm` est bloqué par la politique d'exécution, utiliser `n
 Niveaux : A2, B1, B2. La vitesse, la densité, la présence de neutres et d'ambivalents, ainsi que la complexité du boss changent selon le niveau.
 
 Modes : Arcade, Entraînement, Boss seulement, Classe / vidéoprojecteur.
+
+Objectifs CECRL :
+
+- A2 : reconnaître une appréciation positive ou négative dans des mots courants.
+- B1 : distinguer jugement, description neutre et critique formulée simplement.
+- B2 : analyser l'effet discursif d'un terme et reformuler une critique avec nuance.
+
+## Contrôles
+
+- Déplacement : flèches, ZQSD ou WASD.
+- Neutraliser : Espace.
+- Protéger / absorber : E, Entrée ou bouton Protéger.
+- Pause : P ou Échap.
+
+Sur mobile, le tir automatique cible surtout les péjoratifs proches de l'axe du joueur, et le bouton Protéger permet de valider les mots mélioratifs ou les verbes-bonus.
 
 ## Structure
 

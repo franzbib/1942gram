@@ -53,7 +53,8 @@ p { color: #cfe1ef; line-height: 1.55; }
 .wide { grid-column: 1 / -1; }
 .segmented { display: grid; gap: .55rem; }
 .segmented button { display: flex; gap: .55rem; align-items: center; justify-content: flex-start; text-align: left; min-height: 58px; }
-.segmented span { display: block; color: #c7d7e6; font-size: .92rem; }
+.segmented span { display: grid; gap: .18rem; color: #c7d7e6; font-size: .92rem; }
+.segmented span strong { color: #f8fbff; }
 .badge { display: inline-grid; min-width: 2.1rem; place-items: center; padding: .18rem .4rem; border-radius: 999px; font-weight: 900; color: #0d1b2a; }
 .level-a2 { background: #9ee493; } .level-b1 { background: #85d7ff; } .level-b2 { background: #d6b2ff; }
 select, input, textarea {
@@ -103,6 +104,40 @@ option { color: #102135; }
   text-align: center;
 }
 .pause-button { position: absolute; top: .8rem; right: .8rem; }
+.protect-button {
+  position: absolute;
+  right: .8rem;
+  bottom: 1rem;
+  background: rgba(231,185,84,.92);
+  color: #142033;
+  border-color: #ffd77a;
+  font-weight: 800;
+}
+.action-legend {
+  position: absolute;
+  left: .8rem;
+  top: .8rem;
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  max-width: calc(100% - 8rem);
+}
+.action-legend span {
+  background: rgba(3,10,20,.62);
+  border: 1px solid rgba(200,230,255,.18);
+  border-radius: 8px;
+  padding: .42rem .55rem;
+  color: #dcecff;
+  font-size: .82rem;
+}
+kbd {
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.26);
+  border-radius: 5px;
+  padding: .05rem .28rem;
+  color: #fff6d8;
+  font-weight: 800;
+}
 .overlay-panel {
   position: absolute;
   inset: 0;
@@ -125,6 +160,12 @@ option { color: #102135; }
 .metrics div { background: rgba(255,255,255,.07); border-radius: 8px; padding: .8rem; }
 .metrics span { display: block; color: #a9c7df; font-size: .82rem; }
 .metrics strong { font-size: 1.35rem; }
+.cefr-note {
+  background: rgba(133, 215, 255, .12);
+  border: 1px solid rgba(133, 215, 255, .28);
+  border-radius: 8px;
+  padding: .8rem;
+}
 .review-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 1rem; }
 textarea { min-height: 130px; margin-top: 1rem; resize: vertical; color: #102135; background: #f8fbff; }
 
@@ -152,6 +193,8 @@ textarea { min-height: 130px; margin-top: 1rem; resize: vertical; color: #102135
   .hud span { font-size: .68rem; }
   .hud strong { font-size: .95rem; }
   .message-strip { bottom: .5rem; font-size: .9rem; }
+  .protect-button { bottom: 4.15rem; right: .5rem; padding: .62rem .72rem; }
+  .action-legend { display: none; }
   .metrics { grid-template-columns: repeat(2, 1fr); }
   .main-actions { flex-wrap: wrap; }
 }

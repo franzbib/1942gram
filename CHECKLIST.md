@@ -5,12 +5,14 @@
 - [ ] On peut lancer une partie B1.
 - [ ] On peut lancer une partie B2.
 - [ ] Le joueur peut se déplacer.
-- [ ] Le joueur peut tirer.
+- [ ] Le joueur peut tirer pour neutraliser.
+- [ ] Le joueur peut protéger ou absorber avec E / Entrée / bouton Protéger.
 - [ ] Les mots descendent.
 - [ ] Les collisions fonctionnent.
 - [ ] Les péjoratifs rapportent des points.
 - [ ] Les mélioratifs détruits pénalisent fortement.
 - [ ] Les bonus sont absorbables.
+- [ ] Le tir automatique mobile ne tire pas systématiquement sur les mélioratifs.
 - [ ] Le boss apparaît.
 - [ ] Le boss peut être réussi.
 - [ ] L'écran de résultat s'affiche.

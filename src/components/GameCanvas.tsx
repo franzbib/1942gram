@@ -22,6 +22,7 @@ type FallingWord = {
 };
 
 type Shot = { id: string; x: number; y: number; w: number; h: number };
+type Pulse = { id: string; x: number; y: number; born: number; ok: boolean };
 
 const colors = {
   pejorative: "#8b2434",
@@ -56,9 +57,11 @@ export default function GameCanvas({
   const touch = useTouchControls();
   const words = useRef<FallingWord[]>([]);
   const shots = useRef<Shot[]>([]);
+  const pulses = useRef<Pulse[]>([]);
   const player = useRef<{ x: number; y: number }>({ x: GAME_SIZE.width / 2, y: GAME_SIZE.playerY });
   const combo = useRef(1);
   const lastFire = useRef(0);
+  const lastProtect = useRef(0);
   const lastSpawn = useRef(0);
   const startedAt = useRef(0);
   const bonusUntil = useRef(0);
@@ -119,6 +122,9 @@ export default function GameCanvas({
     lastFire.current = now;
   };
 
+  const isPejorativeInContext = (word: FallingWord) => word.item.category === "pejorative" || (word.item.category === "ambivalent" && word.contextValue === "pejorative");
+  const isMeliorativeInContext = (word: FallingWord) => word.item.category === "meliorative" || (word.item.category === "ambivalent" && word.contextValue === "meliorative");
+
   const processHit = (word: FallingWord) => {
     const stats = statsRef.current;
     stats.hits += 1;
@@ -148,6 +154,61 @@ export default function GameCanvas({
       feedback("Ce mot était neutre : il décrit sans juger.");
     }
     stats.comboMax = Math.max(stats.comboMax, combo.current);
+  };
+
+  const protectWord = (word: FallingWord) => {
+    const stats = statsRef.current;
+    const cat = word.item.category;
+    if (cat === "bonus") {
+      absorbBonus(word);
+      return true;
+    }
+    stats.wordsProcessed += 1;
+    if (isMeliorativeInContext(word)) {
+      addScore(cat === "ambivalent" ? SCORING.correctAmbivalent : SCORING.protectMeliorative, true);
+      stats.meliorativesProtected += 1;
+      if (cat === "ambivalent") stats.ambivalentResolved += 1;
+      combo.current += 1;
+      feedback(cat === "ambivalent" ? "Protection juste : le contexte rendait ce mot valorisant." : "Mot mélioratif protégé : bonne maîtrise du jugement positif.");
+      return true;
+    }
+    if (isPejorativeInContext(word)) {
+      addScore(cat === "ambivalent" ? SCORING.wrongAmbivalent : SCORING.missPejorative, false);
+      stats.pejorativesMissed += 1;
+      stats.review.unshift({ item: word.item, reason: `Vous avez protégé « ${word.item.text} », alors que le contexte portait un jugement négatif.` });
+      combo.current = 1;
+      feedback("Ce mot devait être neutralisé, pas protégé.");
+      return true;
+    }
+    if (cat === "neutral" || word.contextValue === "neutral") {
+      addScore(-15, false);
+      stats.neutralShot += 1;
+      feedback("Mot neutre : il suffisait de l'ignorer.");
+      return true;
+    }
+    return false;
+  };
+
+  const protect = (now: number) => {
+    if (now - lastProtect.current < 520) return;
+    lastProtect.current = now;
+    const radius = config.options.readable ? 112 : 94;
+    const target = words.current
+      .map((word) => ({ word, distance: Math.hypot(word.x + word.w / 2 - player.current.x, word.y + word.h / 2 - player.current.y) }))
+      .filter(({ distance }) => distance < radius)
+      .sort((a, b) => a.distance - b.distance)[0]?.word;
+    const ok = target ? protectWord(target) : false;
+    pulses.current.push({ id: uid("pulse"), x: player.current.x, y: player.current.y, born: now, ok });
+    if (target && ok) words.current = words.current.filter((word) => word.id !== target.id);
+    if (!target) feedback("Aucun mot à protéger dans la zone d'analyse.");
+  };
+
+  const shouldAutoFire = () => {
+    return words.current.some((word) => {
+      const centerX = word.x + word.w / 2;
+      const abovePlayer = word.y + word.h < player.current.y && word.y > 45;
+      return abovePlayer && Math.abs(centerX - player.current.x) < 54 && isPejorativeInContext(word);
+    });
   };
 
   const processMiss = (word: FallingWord) => {
@@ -203,6 +264,22 @@ export default function GameCanvas({
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(210,235,255,.12)";
+    ctx.lineWidth = 1;
+    for (let x = 120; x < GAME_SIZE.width; x += 120) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, GAME_SIZE.height);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(74, 132, 164, .36)";
+    ctx.beginPath();
+    ctx.moveTo(0, 610);
+    ctx.bezierCurveTo(180, 570, 320, 630, 500, 590);
+    ctx.bezierCurveTo(690, 548, 790, 606, 960, 570);
+    ctx.lineTo(960, 620);
+    ctx.lineTo(0, 620);
+    ctx.fill();
     ctx.fillStyle = "#102033";
     for (let i = 0; i < 18; i++) ctx.fillRect(i * 58, 560 - (i % 5) * 18, 42, 70 + (i % 4) * 16);
     ctx.fillStyle = "#182a3e";
@@ -211,6 +288,10 @@ export default function GameCanvas({
     ctx.lineTo(480, 452);
     ctx.lineTo(507, 560);
     ctx.fill();
+    ctx.strokeStyle = "rgba(248, 217, 133, .45)";
+    ctx.beginPath();
+    ctx.arc(480, 520, 15, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.fillStyle = "#f9d985";
     for (let i = 0; i < 16; i++) ctx.fillRect(i * 59 + 18, 585 - (i % 4) * 16, 6, 5);
 
@@ -234,6 +315,22 @@ export default function GameCanvas({
       ctx.shadowBlur = 0;
     });
 
+    pulses.current.forEach((pulse) => {
+      const age = (now - pulse.born) / 520;
+      ctx.save();
+      ctx.globalAlpha = 1 - age;
+      ctx.strokeStyle = pulse.ok ? "#f8d57d" : "#ff8ea3";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(pulse.x, pulse.y, 28 + age * 86, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = pulse.ok ? "rgba(248,213,125,.14)" : "rgba(255,142,163,.12)";
+      ctx.beginPath();
+      ctx.arc(pulse.x, pulse.y, 18 + age * 72, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
     words.current.forEach((word) => {
       const item = word.item;
       const color = colors[item.category];
@@ -251,11 +348,40 @@ export default function GameCanvas({
       ctx.lineWidth = item.category === "meliorative" ? 3 : 2;
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (item.category === "pejorative") {
+        ctx.moveTo(word.x + 18, word.y + word.h / 2 - 9);
+        ctx.lineTo(word.x + 29, word.y + word.h / 2 + 10);
+        ctx.lineTo(word.x + 7, word.y + word.h / 2 + 10);
+        ctx.closePath();
+      } else if (item.category === "meliorative") {
+        ctx.arc(word.x + 18, word.y + word.h / 2, 9, 0, Math.PI * 2);
+      } else if (item.category === "bonus") {
+        ctx.roundRect(word.x + 8, word.y + word.h / 2 - 8, 22, 16, 8);
+      } else if (item.category === "ambivalent") {
+        ctx.arc(word.x + 18, word.y + word.h / 2, 10, 0, Math.PI * 2);
+      } else {
+        ctx.rect(word.x + 9, word.y + word.h / 2 - 8, 18, 16);
+      }
+      ctx.fill();
+      ctx.fillStyle = item.category === "ambivalent" ? "#160f25" : "#102135";
+      ctx.font = "bold 12px Inter, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const glyph = item.category === "pejorative" ? "!" : item.category === "meliorative" ? "+" : item.category === "bonus" ? "V" : item.category === "ambivalent" ? "?" : "=";
+      ctx.fillText(glyph, word.x + 18, word.y + word.h / 2 + 1);
       ctx.fillStyle = "#f8fafc";
       ctx.font = `${config.options.readable ? 24 : 20}px Inter, system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(item.text, word.x + word.w / 2, word.y + word.h / 2 + 1);
+      ctx.fillText(item.text, word.x + word.w / 2 + 10, word.y + word.h / 2 + 1);
+      if ((item.category === "ambivalent" && (difficulty.help > 0.5 || bonusEffect.current === "contextReveal")) && item.contextExamples?.[0]) {
+        const context = item.contextExamples.find((example) => example.value === word.contextValue) ?? item.contextExamples[0];
+        ctx.fillStyle = "rgba(233,213,255,.9)";
+        ctx.font = "11px Inter, system-ui, sans-serif";
+        ctx.fillText(context.sentence.slice(0, 58), word.x + word.w / 2, word.y + word.h + 13);
+      }
       if (difficulty.help > 0.75 || bonusEffect.current === "revealCategories") {
         ctx.fillStyle = color;
         ctx.font = "11px Inter, system-ui, sans-serif";
@@ -280,6 +406,7 @@ export default function GameCanvas({
     statsRef.current = initialStats();
     words.current = [];
     shots.current = [];
+    pulses.current = [];
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -301,9 +428,12 @@ export default function GameCanvas({
           player.current.x = Math.max(38, Math.min(GAME_SIZE.width - 38, (touch.current.x / rect.width) * GAME_SIZE.width));
           player.current.y = Math.max(360, Math.min(GAME_SIZE.height - 40, (touch.current.y! / rect.height) * GAME_SIZE.height));
         }
-        if (keys.current.fire || config.options.autoFire || matchMedia("(pointer: coarse)").matches) fire(now);
+        const mobileAutoFire = matchMedia("(pointer: coarse)").matches;
+        if (keys.current.fire || ((config.options.autoFire || mobileAutoFire) && shouldAutoFire())) fire(now);
+        if (keys.current.protect) protect(now);
         if (now - lastSpawn.current > difficulty.spawnMs) spawnWord(now);
         shots.current.forEach((s) => (s.y -= 8.5));
+        pulses.current = pulses.current.filter((pulse) => now - pulse.born < 520);
         words.current.forEach((w) => {
           const frozen = bonusEffect.current === "freezePejoratives" && w.item.category === "pejorative" && now < bonusUntil.current;
           const slow = bonusEffect.current === "slowMotion" && now < bonusUntil.current;
@@ -375,7 +505,12 @@ export default function GameCanvas({
       <Hud stats={statsView} combo={comboView} activeBonus={activeBonus} />
       <div className="stage-wrap">
         <canvas ref={canvasRef} className="game-canvas" aria-label="Zone de jeu Mission Nuance" />
+        <div className="action-legend">
+          <span><kbd>E</kbd> protéger / absorber</span>
+          <span><kbd>Espace</kbd> neutraliser</span>
+        </div>
         <div className="message-strip">{message}</div>
+        <button className="protect-button" onClick={() => protect(performance.now())}>Protéger</button>
         <button className="pause-button" onClick={() => setPaused(true)}>Pause</button>
         {paused && <PauseOverlay onResume={() => setPaused(false)} onMenu={onMenu} />}
       </div>

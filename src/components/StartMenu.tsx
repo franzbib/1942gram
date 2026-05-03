@@ -29,7 +29,7 @@ export default function StartMenu({
       <section className="title-zone">
         <div className="kicker">Mini-jeu FLE/FOU</div>
         <h1>Mission Nuance</h1>
-        <p>Détruisez les mots péjoratifs, protégez les mots mélioratifs, absorbez les verbes de l'analyse.</p>
+        <p>Neutralisez les mots péjoratifs, protégez les mots mélioratifs, absorbez les verbes de l'analyse.</p>
       </section>
       <section className="menu-grid">
         <div className="panel">
@@ -37,7 +37,8 @@ export default function StartMenu({
           <div className="segmented">
             {levels.map((level) => (
               <button key={level.id} className={config.level === level.id ? "selected" : ""} onClick={() => update({ level: level.id })}>
-                <DifficultyBadge level={level.id} /> {level.description}
+                <DifficultyBadge level={level.id} />
+                <span><strong>{level.description}</strong>{level.objective}</span>
               </button>
             ))}
           </div>
