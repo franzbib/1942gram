@@ -42,6 +42,11 @@ export function safeDispatchCompletion(result: GameResult) {
     scorePercent: result.scorePercent,
     precision: result.precision,
     discernment: result.discernment,
+    baseHealth: result.baseHealth,
+    pejorativesMissed: result.pejorativesMissed,
+    pejorativesHitBase: result.pejorativesHitBase,
+    meliorativesDestroyed: result.meliorativesDestroyed,
+    weaponLocks: result.weaponLocks,
     bossCompleted: result.bossCompleted,
     timestamp: result.timestamp,
   };

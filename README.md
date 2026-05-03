@@ -60,6 +60,11 @@ Les couleurs catégorielles sont réservées :
 
 Les verbes-bonus restent visuellement distincts sous forme de capsules, car leur rôle n'est pas de signaler une connotation. Les mots ambivalents peuvent porter un `?`, qui indique seulement qu'un contexte est nécessaire.
 
+## Identité visuelle et principes graphiques
+
+La direction artistique du jeu (V0.9) adopte une identité "rétro-arcade sobre", s'appuyant sur des teintes nocturnes (bleu nuit) et typographiques (ivoire, parchemin).
+Pour plus de détails sur la palette, l'interface en *glassmorphism* et les limites d'accessibilité visuelle choisies, consultez [GRAPHIC_NOTES.md](./GRAPHIC_NOTES.md). Vous trouverez aussi la liste des améliorations visuelles futures dans [VISUAL_TODO.md](./VISUAL_TODO.md).
+
 ## Nouvelles mécaniques de sanction
 
 - Les mots péjoratifs laissés passer endommagent la base discursive en bas de l'écran.
@@ -90,6 +95,12 @@ Modifier `src/data/bossTexts.ts` et ajouter un appel à `mk` avec le niveau, le 
 Le contrat est défini dans `src/engine/integrationContract.ts`. En cas de réussite réelle, le jeu émet un `CustomEvent` `missionNuance:complete` et un `postMessage` `mission-nuance:complete`.
 
 Voir aussi `INTEGRATION.md`.
+
+Paramètres URL utiles pour une intégration :
+
+```text
+?level=B2&mode=arcade&theme=argumentation&requiredScore=70&embedded=true
+```
 
 ## Limites connues V0.9
 

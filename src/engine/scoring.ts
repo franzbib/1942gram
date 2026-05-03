@@ -45,8 +45,9 @@ export function buildResult(stats: SessionStats, config: GameConfig): GameResult
   const pct = scorePercent(stats);
   const prec = precision(stats);
   const disc = discernment(stats);
+  const minScorePercent = config.requiredScorePercent ?? SUCCESS_THRESHOLDS.minScorePercent;
   const success =
-    pct >= SUCCESS_THRESHOLDS.minScorePercent &&
+    pct >= minScorePercent &&
     stats.bossCompleted &&
     stats.baseHealth > 0 &&
     stats.meliorativesDestroyed <= SUCCESS_THRESHOLDS.maxMeliorativesDestroyed &&

@@ -49,9 +49,24 @@ window.addEventListener("message", (event) => {
   scorePercent: 82,
   precision: 0.86,
   discernment: 0.78,
+  baseHealth: 82,
+  pejorativesMissed: 1,
+  pejorativesHitBase: 1,
+  meliorativesDestroyed: 0,
+  weaponLocks: 0,
   bossCompleted: true,
   timestamp: "..."
 }
 ```
 
 `safeDispatchCompletion(result)` évite les doubles émissions pour une même fin de partie réussie.
+
+## Paramètres URL
+
+Le jeu peut être initialisé avec :
+
+```text
+?level=B2&mode=arcade&theme=argumentation&requiredScore=70&embedded=true
+```
+
+`embedded=true` active une interface plus compacte et conserve les événements `postMessage`.

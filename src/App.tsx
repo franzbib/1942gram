@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import BossTextPhase from "./components/BossTextPhase";
 import EndScreen from "./components/EndScreen";
 import GameScreen from "./components/GameScreen";
@@ -14,10 +15,16 @@ export default function App() {
   const { screen, setScreen, config, setConfig, result, setResult } = useGameSession();
   const baseStats = (window as Window & { __mnStats?: SessionStats }).__mnStats ?? initialStats();
 
-  const start = () => {
-    saveOptions(config.options);
+  useEffect(() => {
+    document.body.classList.toggle("embedded", Boolean(config.embedded));
+    return () => document.body.classList.remove("embedded");
+  }, [config.embedded]);
+
+  const start = (nextConfig = config) => {
+    if (nextConfig !== config) setConfig(nextConfig);
+    saveOptions(nextConfig.options);
     (window as Window & { __mnStats?: SessionStats }).__mnStats = initialStats();
-    setScreen(config.mode === "boss" ? "boss" : "game");
+    setScreen(nextConfig.mode === "boss" ? "boss" : "game");
   };
   const complete = (nextResult: NonNullable<typeof result>) => {
     setResult(nextResult);

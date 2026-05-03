@@ -35,6 +35,11 @@
 - [ ] Le bouton Rejouer fonctionne.
 - [ ] Le retour menu fonctionne.
 - [ ] Le lexique s'affiche.
+- [ ] Le payload `missionNuance:complete` contient baseHealth, pejorativesMissed, meliorativesDestroyed et weaponLocks.
+- [ ] Les paramètres URL `level`, `mode`, `theme`, `requiredScore`, `embedded` initialisent correctement la partie.
 - [ ] Le build passe.
 - [ ] Le jeu fonctionne sur mobile ou en simulation mobile.
 - [ ] La console ne contient pas d'erreurs importantes.
+- [ ] L'identité visuelle "rétro-arcade sobre" est respectée.
+- [ ] Les mots sont visuellement unifiés (ivoire/parchemin).
+- [ ] La base terrestre s'affiche avec la nouvelle architecture visuelle.

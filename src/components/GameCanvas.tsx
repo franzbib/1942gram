@@ -36,10 +36,9 @@ const semanticColors = {
 };
 
 const neutralWordSkins = [
-  { fill: "rgba(243, 238, 224, .95)", stroke: "rgba(116, 103, 82, .42)" },
-  { fill: "rgba(229, 239, 243, .96)", stroke: "rgba(86, 110, 123, .38)" },
-  { fill: "rgba(236, 234, 228, .96)", stroke: "rgba(107, 114, 128, .36)" },
-  { fill: "rgba(242, 244, 236, .95)", stroke: "rgba(105, 114, 94, .34)" },
+  { fill: "rgba(244, 241, 234, .95)", stroke: "rgba(11, 20, 38, .15)" },
+  { fill: "rgba(240, 237, 230, .96)", stroke: "rgba(11, 20, 38, .18)" },
+  { fill: "rgba(235, 232, 226, .95)", stroke: "rgba(11, 20, 38, .12)" },
 ];
 
 function neutralSkinFor(text: string) {
@@ -129,12 +128,12 @@ export default function GameCanvas({
 
   const wordSizePreset = () => {
     const scale = config.options.readable ? WORD_VISUAL_SCALE.readable : WORD_VISUAL_SCALE.normal;
-    const baseFont = config.options.readable ? 21 : 18;
+    const baseFont = config.options.readable ? 19 : 16;
     return {
-      fontSize: Math.max(config.options.readable ? 17 : 15, baseFont * difficulty.readableScale * scale),
-      xPad: config.options.readable ? 18 : 14,
-      yPad: config.options.readable ? 11 : 8,
-      minWidth: config.options.readable ? 74 : 58,
+      fontSize: Math.max(config.options.readable ? 16 : 14, baseFont * difficulty.readableScale * scale),
+      xPad: config.options.readable ? 14 : 10,
+      yPad: config.options.readable ? 9 : 6,
+      minWidth: config.options.readable ? 60 : 48,
     };
   };
 
@@ -329,15 +328,15 @@ export default function GameCanvas({
     if (shake) ctx.translate(Math.sin(now / 22) * shake, Math.cos(now / 27) * shake * 0.55);
     ctx.clearRect(0, 0, GAME_SIZE.width, GAME_SIZE.height);
     const sky = ctx.createLinearGradient(0, 0, 0, GAME_SIZE.height);
-    sky.addColorStop(0, "#122b47");
-    sky.addColorStop(0.54, "#2d6389");
-    sky.addColorStop(1, "#102135");
+    sky.addColorStop(0, "#080f1c");
+    sky.addColorStop(0.6, "#0f1c30");
+    sky.addColorStop(1, "#0a1120");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, GAME_SIZE.width, GAME_SIZE.height);
     ctx.globalAlpha = config.options.reducedMotion ? 0.22 : 0.36;
     for (let i = 0; i < 7; i++) {
       const x = (i * 170 + (config.options.reducedMotion ? 0 : now / (60 + i * 11))) % 1080 - 80;
-      ctx.fillStyle = "#dbeafe";
+      ctx.fillStyle = "rgba(244, 241, 234, 0.4)";
       ctx.beginPath();
       ctx.ellipse(x, 92 + i * 42, 54, 15, 0, 0, Math.PI * 2);
       ctx.ellipse(x + 38, 88 + i * 42, 38, 12, 0, 0, Math.PI * 2);
@@ -367,14 +366,14 @@ export default function GameCanvas({
 
     const baseTop = GAME_SIZE.baseY - 36;
     const baseHeight = 58;
-    const baseFill = baseState === "destroyed" ? "#3d2630" : baseState === "critical" ? "#703442" : baseState === "heavy" ? "#4f4651" : baseState === "damaged" ? "#284459" : "#18384d";
-    ctx.fillStyle = "rgba(4, 11, 20, .35)";
+    const baseFill = baseState === "destroyed" ? "#1a1620" : baseState === "critical" ? "#382025" : baseState === "heavy" ? "#2a2c36" : baseState === "damaged" ? "#182436" : "#0d1a2e";
+    ctx.fillStyle = "rgba(0, 0, 0, .4)";
     ctx.fillRect(18, baseTop + 15, GAME_SIZE.width - 36, baseHeight + 10);
     ctx.fillStyle = baseFill;
     ctx.beginPath();
     ctx.roundRect(34, baseTop + 20, GAME_SIZE.width - 68, 34, 7);
     ctx.fill();
-    ctx.fillStyle = baseState === "destroyed" ? "#21141a" : "#13293b";
+    ctx.fillStyle = baseState === "destroyed" ? "#110e14" : "#0b1426";
     ctx.fillRect(48, baseTop + 48, GAME_SIZE.width - 96, 18);
 
     const buildings = [
@@ -391,17 +390,17 @@ export default function GameCanvas({
     buildings.forEach((b, index) => {
       const damaged = baseState === "destroyed" || (baseState === "critical" && index % 2 === 0) || (baseState === "heavy" && index % 3 === 0) || (baseState === "damaged" && index % 5 === 0);
       const collapse = baseState === "destroyed" ? 18 + (index % 3) * 5 : damaged && baseState === "critical" ? 8 : damaged && baseState === "heavy" ? 4 : 0;
-      ctx.fillStyle = damaged ? "rgba(78, 57, 65, .94)" : "rgba(39, 74, 94, .96)";
+      ctx.fillStyle = damaged ? "rgba(38, 28, 32, .94)" : "rgba(22, 38, 56, .96)";
       ctx.beginPath();
       ctx.roundRect(b.x, baseTop + 20 - b.h + collapse, b.w, b.h, 4);
       ctx.fill();
-      ctx.fillStyle = damaged ? "rgba(244, 194, 109, .24)" : "rgba(248, 217, 133, .72)";
+      ctx.fillStyle = damaged ? "rgba(212, 175, 55, .15)" : "rgba(212, 175, 55, .5)";
       for (let wx = b.x + 9; wx < b.x + b.w - 8; wx += 15) {
         for (let wy = baseTop + 28 - b.h + collapse; wy < baseTop + 14 + collapse; wy += 14) {
           if (!damaged || (wx + wy) % 3 !== 0) ctx.fillRect(wx, wy, 5, 4);
         }
       }
-      ctx.fillStyle = "rgba(235, 244, 250, .75)";
+      ctx.fillStyle = "rgba(244, 241, 234, .75)";
       ctx.font = "bold 9px Inter, system-ui, sans-serif";
       ctx.textAlign = "center";
       if (!damaged || baseState !== "destroyed") ctx.fillText(b.label, b.x + b.w / 2, baseTop + 44 + collapse);
@@ -468,20 +467,28 @@ export default function GameCanvas({
 
     const weaponLocked = now < weaponDisabledUntil.current;
     ctx.globalAlpha = weaponLocked && Math.floor(now / 120) % 2 === 0 ? 0.55 : 1;
-    ctx.fillStyle = "#e8f1ff";
+    
+    // Vaisseau joueur : avion de papier typographique stylisé
+    ctx.fillStyle = "#f4f1ea";
     ctx.beginPath();
-    ctx.moveTo(player.current.x, player.current.y - 24);
-    ctx.lineTo(player.current.x - 28, player.current.y + 24);
+    ctx.moveTo(player.current.x, player.current.y - 28);
+    ctx.lineTo(player.current.x - 22, player.current.y + 22);
     ctx.lineTo(player.current.x, player.current.y + 12);
-    ctx.lineTo(player.current.x + 28, player.current.y + 24);
+    ctx.lineTo(player.current.x + 22, player.current.y + 22);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "#6dd3ff";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    
+    ctx.fillStyle = "#d4cebe"; // Ombre aile droite
+    ctx.beginPath();
+    ctx.moveTo(player.current.x, player.current.y - 28);
+    ctx.lineTo(player.current.x, player.current.y + 12);
+    ctx.lineTo(player.current.x + 22, player.current.y + 22);
+    ctx.closePath();
+    ctx.fill();
+    
     ctx.globalAlpha = 1;
     if (weaponLocked) {
-      ctx.strokeStyle = "rgba(255, 154, 167, .82)";
+      ctx.strokeStyle = "rgba(139, 58, 74, .82)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(player.current.x, player.current.y - 2, 34, 0, Math.PI * 2);
@@ -489,10 +496,10 @@ export default function GameCanvas({
     }
 
     shots.current.forEach((shot) => {
-      ctx.fillStyle = "#d9fbff";
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#9bf6ff";
-      ctx.fillRect(shot.x, shot.y, shot.w, shot.h);
+      ctx.fillStyle = "#f4f1ea";
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = "rgba(244, 241, 234, 0.6)";
+      ctx.fillRect(shot.x + shot.w / 2 - 1, shot.y, 2, shot.h);
       ctx.shadowBlur = 0;
     });
 
@@ -576,15 +583,15 @@ export default function GameCanvas({
         if (isBonus) ctx.roundRect(word.x + 8, word.y + word.h / 2 - 8, 22, 16, 8);
         else ctx.arc(word.x + 18, word.y + word.h / 2, 9, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#f8fafc";
+        ctx.fillStyle = "#f4f1ea";
         ctx.font = "bold 11px Inter, system-ui, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const glyph = isBonus ? "V" : isAmbivalent && !fullHints ? "?" : item.category === "pejorative" ? "!" : item.category === "meliorative" ? "+" : "=";
         ctx.fillText(glyph, word.x + 18, word.y + word.h / 2 + 1);
       }
-      ctx.fillStyle = fullHints ? "#f8fafc" : "#142033";
-      const renderedFont = Math.max(config.options.readable ? 17 : 15, word.h - (config.options.readable ? 22 : 16));
+      ctx.fillStyle = fullHints ? "#f4f1ea" : "#0b1426";
+      const renderedFont = Math.max(config.options.readable ? 16 : 14, word.h - (config.options.readable ? 18 : 12));
       ctx.font = `${renderedFont}px Inter, system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";

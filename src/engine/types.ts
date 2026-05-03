@@ -74,6 +74,8 @@ export type GameConfig = {
   mode: GameMode;
   theme: ThemeId;
   options: GameOptions;
+  requiredScorePercent?: number;
+  embedded?: boolean;
 };
 
 export type ReviewEntry = {

@@ -19,15 +19,16 @@ export default function StartMenu({
 }: {
   config: GameConfig;
   setConfig: (config: GameConfig) => void;
-  onPlay: () => void;
+  onPlay: (nextConfig?: GameConfig) => void;
   onLexicon: () => void;
   onHelp: () => void;
 }) {
   const update = (patch: Partial<GameConfig>) => setConfig({ ...config, ...patch });
   const updateOptions = (patch: Partial<GameConfig["options"]>) => setConfig({ ...config, options: { ...config.options, ...patch } });
   const randomGame = () => {
-    setConfig({ ...config, level: choice(levels).id, mode: choice(modes).id, theme: choice(themes).id });
-    onPlay();
+    const nextConfig = { ...config, level: choice(levels).id, mode: choice(modes).id, theme: choice(themes).id };
+    setConfig(nextConfig);
+    onPlay(nextConfig);
   };
   return (
     <main className="menu-shell">
@@ -88,7 +89,7 @@ export default function StartMenu({
         </div>
       </section>
       <nav className="main-actions">
-        <button className="primary" onClick={onPlay}><Play size={18} /> Jouer</button>
+        <button className="primary" onClick={() => onPlay()}><Play size={18} /> Jouer</button>
         <button onClick={randomGame}><Shuffle size={18} /> Partie aléatoire</button>
         <button onClick={onLexicon}><BookOpen size={18} /> Lexique</button>
         <button onClick={onHelp}><HelpCircle size={18} /> Aide</button>
