@@ -1,0 +1,22 @@
+# Checklist manuelle V0.9
+
+- [ ] Le menu s'affiche.
+- [ ] On peut lancer une partie A2.
+- [ ] On peut lancer une partie B1.
+- [ ] On peut lancer une partie B2.
+- [ ] Le joueur peut se déplacer.
+- [ ] Le joueur peut tirer.
+- [ ] Les mots descendent.
+- [ ] Les collisions fonctionnent.
+- [ ] Les péjoratifs rapportent des points.
+- [ ] Les mélioratifs détruits pénalisent fortement.
+- [ ] Les bonus sont absorbables.
+- [ ] Le boss apparaît.
+- [ ] Le boss peut être réussi.
+- [ ] L'écran de résultat s'affiche.
+- [ ] Le bouton Rejouer fonctionne.
+- [ ] Le retour menu fonctionne.
+- [ ] Le lexique s'affiche.
+- [ ] Le build passe.
+- [ ] Le jeu fonctionne sur mobile ou en simulation mobile.
+- [ ] La console ne contient pas d'erreurs importantes.
