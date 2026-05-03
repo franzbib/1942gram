@@ -10,7 +10,10 @@
 - [ ] Les mots descendent.
 - [ ] La base est visible en bas de la zone de jeu.
 - [ ] Laisser passer plusieurs péjoratifs réduit la santé de la base.
+- [ ] La base montre des fissures, fumées ou flammes selon les seuils de santé.
+- [ ] Un impact local apparaît quand un péjoratif atteint la base.
 - [ ] La partie se termine si la base atteint 0.
+- [ ] L'animation finale de destruction est visible avant l'écran de résultat.
 - [ ] Détruire un mélioratif bloque temporairement le tir.
 - [ ] Le déplacement reste possible pendant le blocage du tir.
 - [ ] Le tir automatique est suspendu pendant le blocage.

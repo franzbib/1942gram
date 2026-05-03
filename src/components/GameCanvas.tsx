@@ -25,6 +25,7 @@ type Shot = { id: string; x: number; y: number; w: number; h: number };
 type Pulse = { id: string; x: number; y: number; born: number; ok: boolean };
 type BaseImpact = { id: string; x: number; born: number };
 type FeedbackTone = "neutral" | "success" | "error";
+type BaseDamageState = "healthy" | "damaged" | "heavy" | "critical" | "destroyed";
 
 const semanticColors = {
   pejorative: "#8b2434",
@@ -50,6 +51,24 @@ function categoryLabel(item: LexicalItem) {
   return item.category === "pejorative" ? "péjoratif" : item.category === "meliorative" ? "mélioratif" : item.category === "neutral" ? "neutre" : item.category === "bonus" ? "bonus" : "contexte ?";
 }
 
+function baseStateFor(health: number): BaseDamageState {
+  if (health <= 0) return "destroyed";
+  if (health <= 25) return "critical";
+  if (health <= 50) return "heavy";
+  if (health <= 75) return "damaged";
+  return "healthy";
+}
+
+function drawCrack(ctx: CanvasRenderingContext2D, x: number, y: number, scale = 1) {
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + 8 * scale, y + 10 * scale);
+  ctx.lineTo(x + 2 * scale, y + 18 * scale);
+  ctx.moveTo(x + 8 * scale, y + 10 * scale);
+  ctx.lineTo(x + 16 * scale, y + 15 * scale);
+  ctx.stroke();
+}
+
 export default function GameCanvas({
   config,
   onBoss,
@@ -71,6 +90,8 @@ export default function GameCanvas({
   const [activeBonus, setActiveBonus] = useState<string | undefined>();
   const [fireLockedMs, setFireLockedMs] = useState(0);
   const pausedRef = useRef(false);
+  const gameOverScheduled = useRef(false);
+  const baseDestroyedAt = useRef<number | null>(null);
   const keys = useKeyboardControls(() => setPaused((p) => !p));
   const touch = useTouchControls();
   const words = useRef<FallingWord[]>([]);
@@ -257,10 +278,12 @@ export default function GameCanvas({
   const damageBase = (word: FallingWord) => {
     const stats = statsRef.current;
     const damage = BASE_DAMAGE_BY_LEVEL[config.level];
+    const now = performance.now();
     stats.baseHealth = Math.max(0, stats.baseHealth - damage);
     stats.pejorativesHitBase += 1;
     stats.failureReason = stats.baseHealth <= 0 ? "baseDestroyed" : stats.failureReason;
-    baseImpacts.current.push({ id: uid("base"), x: word.x + word.w / 2, born: performance.now() });
+    if (stats.baseHealth <= 0 && baseDestroyedAt.current === null) baseDestroyedAt.current = now;
+    baseImpacts.current.push({ id: uid("base"), x: word.x + word.w / 2, born: now });
   };
 
   const processMiss = (word: FallingWord) => {
@@ -298,8 +321,12 @@ export default function GameCanvas({
   const draw = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, now: number) => {
     const sx = width / GAME_SIZE.width;
     const sy = height / GAME_SIZE.height;
+    const latestImpact = baseImpacts.current.at(-1);
+    const shakeAge = latestImpact ? now - latestImpact.born : 9999;
+    const shake = config.options.reducedMotion ? 0 : Math.max(0, 1 - shakeAge / 260) * (statsRef.current.baseHealth <= 25 ? 5 : 3);
     ctx.save();
     ctx.scale(sx, sy);
+    if (shake) ctx.translate(Math.sin(now / 22) * shake, Math.cos(now / 27) * shake * 0.55);
     ctx.clearRect(0, 0, GAME_SIZE.width, GAME_SIZE.height);
     const sky = ctx.createLinearGradient(0, 0, 0, GAME_SIZE.height);
     sky.addColorStop(0, "#122b47");
@@ -326,6 +353,7 @@ export default function GameCanvas({
       ctx.stroke();
     }
     const baseHealth = statsRef.current.baseHealth;
+    const baseState = baseStateFor(baseHealth);
     ctx.fillStyle = "rgba(74, 132, 164, .36)";
     ctx.beginPath();
     ctx.moveTo(0, 610);
@@ -335,27 +363,94 @@ export default function GameCanvas({
     ctx.lineTo(0, 620);
     ctx.fill();
     ctx.fillStyle = "#102033";
-    for (let i = 0; i < 18; i++) ctx.fillRect(i * 58, 560 - (i % 5) * 18, 42, 70 + (i % 4) * 16);
-    ctx.fillStyle = baseHealth < 15 ? "rgba(116, 41, 51, .78)" : baseHealth < 40 ? "rgba(102, 74, 55, .78)" : "rgba(19, 45, 61, .82)";
-    ctx.fillRect(0, GAME_SIZE.baseY, GAME_SIZE.width, 20);
-    ctx.fillStyle = "rgba(232, 241, 247, .78)";
+    for (let i = 0; i < 18; i++) ctx.fillRect(i * 58, 552 - (i % 5) * 14, 38, 52 + (i % 4) * 12);
+
+    const baseTop = GAME_SIZE.baseY - 36;
+    const baseHeight = 58;
+    const baseFill = baseState === "destroyed" ? "#3d2630" : baseState === "critical" ? "#703442" : baseState === "heavy" ? "#4f4651" : baseState === "damaged" ? "#284459" : "#18384d";
+    ctx.fillStyle = "rgba(4, 11, 20, .35)";
+    ctx.fillRect(18, baseTop + 15, GAME_SIZE.width - 36, baseHeight + 10);
+    ctx.fillStyle = baseFill;
+    ctx.beginPath();
+    ctx.roundRect(34, baseTop + 20, GAME_SIZE.width - 68, 34, 7);
+    ctx.fill();
+    ctx.fillStyle = baseState === "destroyed" ? "#21141a" : "#13293b";
+    ctx.fillRect(48, baseTop + 48, GAME_SIZE.width - 96, 18);
+
+    const buildings = [
+      { x: 82, w: 44, h: 44, label: "LEX" },
+      { x: 148, w: 62, h: 58, label: "NU" },
+      { x: 232, w: 50, h: 38, label: "ARG" },
+      { x: 324, w: 78, h: 64, label: "TXT" },
+      { x: 438, w: 86, h: 78, label: "AMI" },
+      { x: 562, w: 70, h: 52, label: "CTX" },
+      { x: 666, w: 56, h: 40, label: "B1" },
+      { x: 760, w: 72, h: 60, label: "B2" },
+      { x: 858, w: 46, h: 46, label: "FLE" },
+    ];
+    buildings.forEach((b, index) => {
+      const damaged = baseState === "destroyed" || (baseState === "critical" && index % 2 === 0) || (baseState === "heavy" && index % 3 === 0) || (baseState === "damaged" && index % 5 === 0);
+      const collapse = baseState === "destroyed" ? 18 + (index % 3) * 5 : damaged && baseState === "critical" ? 8 : damaged && baseState === "heavy" ? 4 : 0;
+      ctx.fillStyle = damaged ? "rgba(78, 57, 65, .94)" : "rgba(39, 74, 94, .96)";
+      ctx.beginPath();
+      ctx.roundRect(b.x, baseTop + 20 - b.h + collapse, b.w, b.h, 4);
+      ctx.fill();
+      ctx.fillStyle = damaged ? "rgba(244, 194, 109, .24)" : "rgba(248, 217, 133, .72)";
+      for (let wx = b.x + 9; wx < b.x + b.w - 8; wx += 15) {
+        for (let wy = baseTop + 28 - b.h + collapse; wy < baseTop + 14 + collapse; wy += 14) {
+          if (!damaged || (wx + wy) % 3 !== 0) ctx.fillRect(wx, wy, 5, 4);
+        }
+      }
+      ctx.fillStyle = "rgba(235, 244, 250, .75)";
+      ctx.font = "bold 9px Inter, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      if (!damaged || baseState !== "destroyed") ctx.fillText(b.label, b.x + b.w / 2, baseTop + 44 + collapse);
+    });
+
+    ctx.fillStyle = "rgba(232, 241, 247, .82)";
     ctx.font = "12px Inter, system-ui, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText("Base discursive", 18, GAME_SIZE.baseY + 14);
+    ctx.fillText("Base discursive", 18, GAME_SIZE.baseY + 16);
     ctx.fillStyle = "rgba(255,255,255,.18)";
-    ctx.fillRect(132, GAME_SIZE.baseY + 6, 118, 8);
-    ctx.fillStyle = baseHealth < 15 ? "#ff9aa7" : baseHealth < 40 ? "#f4c26d" : "#8fd7c1";
-    ctx.fillRect(132, GAME_SIZE.baseY + 6, 118 * Math.max(0, baseHealth / 100), 8);
-    if (baseHealth < 70) {
-      ctx.strokeStyle = "rgba(246, 220, 190, .35)";
+    ctx.fillRect(132, GAME_SIZE.baseY + 8, 118, 8);
+    ctx.fillStyle = baseHealth < 25 ? "#ff9aa7" : baseHealth < 51 ? "#f4c26d" : "#8fd7c1";
+    ctx.fillRect(132, GAME_SIZE.baseY + 8, 118 * Math.max(0, baseHealth / 100), 8);
+
+    if (baseState !== "healthy") {
+      ctx.strokeStyle = "rgba(246, 220, 190, .46)";
       ctx.lineWidth = 2;
-      for (let i = 0; i < (baseHealth < 40 ? 9 : 4); i++) {
-        const x = 300 + i * 67;
+      const cracks = baseState === "damaged" ? 4 : baseState === "heavy" ? 8 : 13;
+      for (let i = 0; i < cracks; i++) drawCrack(ctx, 276 + i * 48, baseTop + 18 + (i % 3) * 8, baseState === "critical" || baseState === "destroyed" ? 1.2 : 0.85);
+    }
+
+    if (baseState === "heavy" || baseState === "critical" || baseState === "destroyed") {
+      const smokeCount = config.options.reducedMotion ? 3 : baseState === "heavy" ? 5 : 9;
+      for (let i = 0; i < smokeCount; i++) {
+        const drift = config.options.reducedMotion ? 0 : Math.sin(now / 650 + i) * 7;
+        const x = 155 + i * 82 + drift;
+        const y = baseTop - 30 - (config.options.reducedMotion ? i % 2 : (now / 55 + i * 9) % 34);
+        ctx.fillStyle = baseState === "destroyed" ? "rgba(32, 28, 32, .42)" : "rgba(85, 81, 83, .35)";
         ctx.beginPath();
-        ctx.moveTo(x, GAME_SIZE.baseY + 2);
-        ctx.lineTo(x + 12, GAME_SIZE.baseY + 16);
-        ctx.lineTo(x + 5, GAME_SIZE.baseY + 20);
-        ctx.stroke();
+        ctx.ellipse(x, y, 18 + (i % 3) * 5, 8 + (i % 2) * 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (baseState === "critical" || baseState === "destroyed") {
+      const flameCount = config.options.reducedMotion ? 2 : 5;
+      for (let i = 0; i < flameCount; i++) {
+        const x = 238 + i * 126;
+        const flicker = config.options.reducedMotion ? 0 : Math.sin(now / 90 + i) * 3;
+        ctx.fillStyle = "rgba(244, 113, 83, .72)";
+        ctx.beginPath();
+        ctx.moveTo(x, baseTop + 14);
+        ctx.quadraticCurveTo(x + 10, baseTop - 8 + flicker, x + 20, baseTop + 14);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255, 212, 126, .72)";
+        ctx.beginPath();
+        ctx.moveTo(x + 6, baseTop + 14);
+        ctx.quadraticCurveTo(x + 12, baseTop + 1 + flicker, x + 17, baseTop + 14);
+        ctx.fill();
       }
     }
     ctx.fillStyle = "#182a3e";
@@ -418,7 +513,7 @@ export default function GameCanvas({
     });
 
     baseImpacts.current.forEach((impact) => {
-      const age = (now - impact.born) / 700;
+      const age = (now - impact.born) / 900;
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1 - age);
       ctx.strokeStyle = "rgba(255, 154, 167, .82)";
@@ -426,8 +521,31 @@ export default function GameCanvas({
       ctx.beginPath();
       ctx.arc(impact.x, GAME_SIZE.baseY + 8, 10 + age * 34, 0, Math.PI * 2);
       ctx.stroke();
+      if (!config.options.reducedMotion) {
+        ctx.fillStyle = "rgba(248, 217, 133, .68)";
+        for (let i = 0; i < 7; i++) {
+          const angle = (Math.PI * 2 * i) / 7;
+          ctx.fillRect(impact.x + Math.cos(angle) * (12 + age * 30), GAME_SIZE.baseY + 8 + Math.sin(angle) * (7 + age * 22), 3, 3);
+        }
+      }
       ctx.restore();
     });
+
+    if (baseDestroyedAt.current !== null) {
+      const age = Math.min(1, (now - baseDestroyedAt.current) / 1200);
+      ctx.save();
+      ctx.globalAlpha = 1 - age * 0.25;
+      ctx.strokeStyle = "rgba(255, 190, 125, .78)";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(GAME_SIZE.width / 2, GAME_SIZE.baseY - 12, 60 + age * 210, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 120, 98, .12)";
+      ctx.beginPath();
+      ctx.arc(GAME_SIZE.width / 2, GAME_SIZE.baseY - 12, 44 + age * 160, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     words.current.forEach((word) => {
       const item = word.item;
@@ -504,6 +622,8 @@ export default function GameCanvas({
     pulses.current = [];
     baseImpacts.current = [];
     weaponDisabledUntil.current = 0;
+    gameOverScheduled.current = false;
+    baseDestroyedAt.current = null;
     setFireLockedMs(0);
 
     const resize = () => {
@@ -532,7 +652,7 @@ export default function GameCanvas({
         if (now - lastSpawn.current > difficulty.spawnMs) spawnWord(now);
         shots.current.forEach((s) => (s.y -= 8.5));
         pulses.current = pulses.current.filter((pulse) => now - pulse.born < 520);
-        baseImpacts.current = baseImpacts.current.filter((impact) => now - impact.born < 700);
+        baseImpacts.current = baseImpacts.current.filter((impact) => now - impact.born < 900 || statsRef.current.baseHealth <= 0);
         words.current.forEach((w) => {
           const frozen = bonusEffect.current === "freezePejoratives" && w.item.category === "pejorative" && now < bonusUntil.current;
           const slow = bonusEffect.current === "slowMotion" && now < bonusUntil.current;
@@ -572,7 +692,12 @@ export default function GameCanvas({
         }
         if (statsRef.current.baseHealth <= 0) {
           statsRef.current.failureReason = "baseDestroyed";
-          onGameOver(buildResult(statsRef.current, config));
+          if (!gameOverScheduled.current) {
+            gameOverScheduled.current = true;
+            baseDestroyedAt.current = baseDestroyedAt.current ?? now;
+            feedback("La base s'effondre : trop de mots péjoratifs sont passés.", "error");
+          }
+          if (now - (baseDestroyedAt.current ?? now) > (config.options.reducedMotion ? 450 : 1250)) onGameOver(buildResult(statsRef.current, config));
           return;
         }
         if (statsRef.current.mistakes >= 6) {

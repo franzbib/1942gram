@@ -67,6 +67,8 @@ Les verbes-bonus restent visuellement distincts sous forme de capsules, car leur
 - Détruire un mot mélioratif bloque temporairement le tir. Le joueur peut toujours se déplacer, mais il doit attendre avant de neutraliser à nouveau.
 - Les cartouches des mots ont été réduits pour améliorer la fluidité, la précision du tir et la lisibilité de la zone de jeu.
 
+La base est dessinée dans le Canvas comme une petite citadelle typographique. Elle a cinq états visuels : intacte `100-76`, premiers dégâts `75-51`, dégâts moyens `50-26`, critique `25-1`, détruite `0`. Les impacts produisent un effet local, et l'option "Réduire les animations" limite le shake, la fumée et les particules.
+
 ## Structure
 
 - `src/components` : écrans et UI.
