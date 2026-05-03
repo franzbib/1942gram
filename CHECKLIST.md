@@ -8,6 +8,10 @@
 - [ ] Le joueur peut tirer pour neutraliser.
 - [ ] Le joueur peut protéger ou absorber avec E / Entrée / bouton Protéger.
 - [ ] Les mots descendent.
+- [ ] En B1 arcade, un péjoratif, un mélioratif et un neutre ont une apparence équivalente avant action.
+- [ ] En B2 arcade, les mots ordinaires ne donnent pas la réponse par couleur, bordure ou icône.
+- [ ] La couleur de feedback apparaît seulement après tir, protection, absorption ou clic de boss.
+- [ ] Le mode `full` reste explicitement guidé et non activé par défaut en B1/B2.
 - [ ] Les collisions fonctionnent.
 - [ ] Les péjoratifs rapportent des points.
 - [ ] Les mélioratifs détruits pénalisent fortement.

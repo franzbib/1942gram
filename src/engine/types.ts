@@ -66,6 +66,7 @@ export type GameOptions = {
   readable: boolean;
   reducedMotion: boolean;
   muted: boolean;
+  visualHints: "off" | "training" | "full";
 };
 
 export type GameConfig = {

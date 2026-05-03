@@ -5,6 +5,11 @@ import type { GameConfig, GameMode } from "../engine/types";
 import { choice } from "../utils/random";
 import DifficultyBadge from "./DifficultyBadge";
 
+function recommendedHints(level: GameConfig["level"], mode: GameConfig["mode"]) {
+  if (level === "A2" && (mode === "training" || mode === "arcade")) return "training";
+  return "off";
+}
+
 export default function StartMenu({
   config,
   setConfig,
@@ -36,7 +41,11 @@ export default function StartMenu({
           <h2>Niveau CECR</h2>
           <div className="segmented">
             {levels.map((level) => (
-              <button key={level.id} className={config.level === level.id ? "selected" : ""} onClick={() => update({ level: level.id })}>
+              <button
+                key={level.id}
+                className={config.level === level.id ? "selected" : ""}
+                onClick={() => setConfig({ ...config, level: level.id, options: { ...config.options, visualHints: recommendedHints(level.id, config.mode) } })}
+              >
                 <DifficultyBadge level={level.id} />
                 <span><strong>{level.description}</strong>{level.objective}</span>
               </button>
@@ -47,7 +56,11 @@ export default function StartMenu({
           <h2>Mode</h2>
           <div className="segmented">
             {modes.map((mode) => (
-              <button key={mode.id} className={config.mode === mode.id ? "selected" : ""} onClick={() => update({ mode: mode.id as GameMode })}>
+              <button
+                key={mode.id}
+                className={config.mode === mode.id ? "selected" : ""}
+                onClick={() => setConfig({ ...config, mode: mode.id as GameMode, options: { ...config.options, visualHints: recommendedHints(config.level, mode.id) } })}
+              >
                 <strong>{mode.label}</strong><span>{mode.description}</span>
               </button>
             ))}
@@ -64,6 +77,14 @@ export default function StartMenu({
             <label><input type="checkbox" checked={config.options.reducedMotion} onChange={(e) => updateOptions({ reducedMotion: e.target.checked })} /> Réduire les animations</label>
             <label><input type="checkbox" checked={config.options.muted} onChange={(e) => updateOptions({ muted: e.target.checked })} /> Muet</label>
           </div>
+          <label className="hint-select">
+            Indices visuels
+            <select value={config.options.visualHints} onChange={(e) => updateOptions({ visualHints: e.target.value as GameConfig["options"]["visualHints"] })}>
+              <option value="off">off - aucune réponse avant action</option>
+              <option value="training">training - feedback après décision</option>
+              <option value="full">full - guidage explicite</option>
+            </select>
+          </label>
         </div>
       </section>
       <nav className="main-actions">

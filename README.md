@@ -47,6 +47,19 @@ Objectifs CECRL :
 
 Sur mobile, le tir automatique cible surtout les péjoratifs proches de l'axe du joueur, et le bouton Protéger permet de valider les mots mélioratifs ou les verbes-bonus.
 
+## Principe de neutralisation visuelle
+
+En mode Arcade B1/B2, les mots ordinaires ne sont pas colorés selon leur catégorie. Un péjoratif, un mélioratif et un neutre ont une apparence équivalente avant action : la décision doit donc reposer sur la lecture du mot et la connaissance de sa connotation.
+
+Les couleurs catégorielles sont réservées :
+
+- au feedback après décision ;
+- au mode `training`, sous forme d'aide après action ;
+- au mode `full`, destiné à l'accessibilité ou à une découverte très guidée ;
+- à l'écran Lexique, qui est un espace de révision hors contrainte.
+
+Les verbes-bonus restent visuellement distincts sous forme de capsules, car leur rôle n'est pas de signaler une connotation. Les mots ambivalents peuvent porter un `?`, qui indique seulement qu'un contexte est nécessaire.
+
 ## Structure
 
 - `src/components` : écrans et UI.

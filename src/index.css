@@ -69,6 +69,7 @@ option { color: #102135; }
 .checks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .7rem; margin-top: .9rem; }
 .checks label { display: flex; gap: .45rem; align-items: center; color: #dbeafe; background: rgba(255,255,255,.06); padding: .65rem; border-radius: 8px; }
 .checks input { width: auto; }
+.hint-select { display: grid; gap: .45rem; margin-top: .8rem; color: #dbeafe; }
 .main-actions, .row { display: flex; gap: .75rem; align-items: center; justify-content: center; margin-top: 1.2rem; }
 .main-actions button, .row button { display: inline-flex; align-items: center; gap: .45rem; }
 .wrap { flex-wrap: wrap; }
@@ -103,6 +104,9 @@ option { color: #102135; }
   color: #f8fbff;
   text-align: center;
 }
+.message-strip.success { border-color: rgba(84, 190, 150, .62); background: rgba(14, 65, 58, .78); }
+.message-strip.error { border-color: rgba(190, 72, 89, .68); background: rgba(84, 22, 36, .8); }
+.message-strip.neutral { border-color: rgba(200,230,255,.25); }
 .pause-button { position: absolute; top: .8rem; right: .8rem; }
 .protect-button {
   position: absolute;
@@ -151,8 +155,11 @@ kbd {
 .boss-screen, .end-screen, .help-screen { display: grid; place-items: center; }
 .boss-panel, .result-panel, .help-panel { width: min(980px, 100%); }
 .boss-text { font-size: clamp(1.25rem, 2.5vw, 2rem); line-height: 1.9; background: rgba(255,255,255,.06); padding: 1rem; border-radius: 8px; }
-.token { padding: .12rem .22rem; margin: .05rem; border-color: transparent; background: transparent; }
-.token.selected { background: rgba(139,36,52,.55); border-color: #ff9aa7; }
+.token { padding: .12rem .22rem; margin: .05rem; border-color: transparent; background: rgba(255,255,255,.03); }
+.token:hover { text-decoration: underline; background: rgba(255,255,255,.08); }
+.token.revealed.correct { background: rgba(42, 130, 98, .32); border-color: rgba(116, 220, 176, .58); }
+.token.revealed.incorrect { background: rgba(139,36,52,.44); border-color: rgba(255,154,167,.64); }
+.choices button.selected { background: rgba(110, 185, 231, .24); border-color: rgba(150, 220, 255, .55); }
 .boss-targets { display: grid; gap: .45rem; margin: 1rem 0; color: #cfe1ef; }
 .choices { display: grid; gap: .75rem; margin: 1rem 0; }
 .choices button { text-align: left; line-height: 1.45; }

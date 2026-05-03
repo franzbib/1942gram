@@ -4,6 +4,12 @@ import { loadStored } from "../utils/storage";
 
 const stored = loadStored();
 
+function defaultVisualHints(level: GameConfig["level"], mode: GameConfig["mode"]) {
+  if (level === "A2" && mode === "training") return "training";
+  if (level === "A2" && mode === "arcade") return "training";
+  return "off";
+}
+
 export function useGameSession() {
   const [screen, setScreen] = useState<"menu" | "game" | "boss" | "end" | "lexicon" | "help">("menu");
   const [config, setConfig] = useState<GameConfig>({
@@ -15,6 +21,7 @@ export function useGameSession() {
       readable: stored.options?.readable ?? false,
       reducedMotion: stored.options?.reducedMotion ?? false,
       muted: stored.options?.muted ?? true,
+      visualHints: stored.options?.visualHints ?? defaultVisualHints(stored.last?.level ?? "B1", stored.last?.mode ?? "arcade"),
     },
   });
   const [result, setResult] = useState<GameResult | null>(null);
